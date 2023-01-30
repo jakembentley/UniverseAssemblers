@@ -1,14 +1,17 @@
+from uuid import uuid4
 import PySimpleGUI as sg
-
+import ua_objects as ua
 
 def main():
     #define color theme of GUI
     sg.theme('Topanga')
-    
+    sun = ua.Location(3,1,2,None,str(uuid4()))
+    path = "location.png"
+    sun.getSelfie(path)
     #arrange the local map and object description elements in a single column
     local_col = [
         [sg.Text(key = '-MAP NAME-')],
-        [sg.Image(key = '-MAP IMAGE-', background_color = '#F9EFE8', size = (1000, 600))],
+        [sg.Image(filename = path, key = '-MAP IMAGE-', background_color = '#F9EFE8', size = (1000, 600))],
         #[sg.HorizontalSeparator()],
         [sg.Text('This will be game object descriptors')],
         [sg.Listbox(values = [], enable_events = True, key = '-OBJECT LIST-', size = (900, 400))]  
@@ -27,13 +30,14 @@ def main():
         [game_area]]
     #instantiate a window
     window = sg.Window('Universal Assemblers', layout, size = (1920,1080))
+    print("Suns children: {children}" .format(children = sun["children"]))
 
-    #display the window until it is closed or the application is exited
     while True:
         event, values = window.read()
+        print(event, values)
+        window.refresh()
         if event == sg.WIN_CLOSED or event == 'Close':
             break
-        break
     window.close()
     return
 
