@@ -178,4 +178,69 @@ class gameGraph:
 
 
 
+class Resource:
+    '''
+    a resource object refers to an in game resource that exists as a member of any location
+    resources need to be modifiable, and referrable both the locations they are in and for the player when they are extracted
+    
+    '''
+    pass
+
+class Interface:
+    '''
+    a class to encaspulate all game GUI methods and members
+    '''
+    __init__(self):
+        pass
+
+    def start(self):
+        '''
+        define a start function that
+        either opens a save file or starts a new game
+        '''
+
+        #init a start window that either starts a new game or loads an existing game
+        sg.theme('Topanga')
+        layout =[
+            [sg.Text("Welcome to Universal Assemblers")],
+            [sg.Text("Select a save file"), sg.Input(), sg.FileBrowse(), sg.Button("Ok")],
+            [sg.Button("New Game")]
+        ]
+
+        window = sg.Window('Welcome to Universal Assemblers', layout)
+        #open the window and loop to handle events
+        while True:
+            #close window if closed event
+            event, values = window.read()
+            if event == sg.WIN_CLOSED or event == 'Close':
+                break
+            #if user selects new game make a game graph
+            if event == "New Game":
+                self.G = ua.gameGraph(100, 0.01)
+                window.close()
+            #if user selects ok event try to open save file
+            if event == "Ok":
+                selected_file = values[0]
+                if selected_file is None:
+                    sg.Popup('Oops! No save file was selected, please select a \'*.pickle\' file')
+                else:
+                    try: 
+                        with open('{selec}'.format(selec=selected_file), 'rb') as f:
+                            #load game map --> this may be updated to be a broader game object
+                            self.G =pkl.load(f)
+                        sg.Popup('Game Loaded!')
+                        window.close()
+                    except:
+                        sg.Popup('Oops! Please select a \'*.pickle\' file')
+
+        window.close()
+        return self.G
+
+    def setMainWindow(self, G, node):
+        '''
+        takes a game graph object and a current node and sets the main window
+        to that node for display,
+        sets the buttons and text elements as well (defined separately)
+        '''
+        pass
 
