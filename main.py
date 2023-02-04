@@ -88,7 +88,6 @@ def main():
     while True:
         event, values = window.read()
         print(event, values)
-        window.refresh()
         if event == sg.WIN_CLOSED or event == 'Close':
             break
     window.close()

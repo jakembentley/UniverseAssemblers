@@ -1,4 +1,5 @@
-﻿import random
+﻿from genericpath import exists
+import random
 import string
 import PySimpleGUI as sg
 import numpy as np
@@ -190,9 +191,11 @@ class Interface:
     '''
     a class to encaspulate all game GUI methods and members
     '''
-    __init__(self):
-        pass
+    def __init__(self):
+        self.theme = sg.theme("Topanga")
+        self.start()
 
+    #setting up a game-start popup
     def start(self):
         '''
         define a start function that
@@ -200,7 +203,6 @@ class Interface:
         '''
 
         #init a start window that either starts a new game or loads an existing game
-        sg.theme('Topanga')
         layout =[
             [sg.Text("Welcome to Universal Assemblers")],
             [sg.Text("Select a save file"), sg.Input(), sg.FileBrowse(), sg.Button("Ok")],
@@ -216,7 +218,7 @@ class Interface:
                 break
             #if user selects new game make a game graph
             if event == "New Game":
-                self.G = ua.gameGraph(100, 0.01)
+                self.graph = ua.gameGraph(100, 0.01)
                 window.close()
             #if user selects ok event try to open save file
             if event == "Ok":
@@ -227,15 +229,105 @@ class Interface:
                     try: 
                         with open('{selec}'.format(selec=selected_file), 'rb') as f:
                             #load game map --> this may be updated to be a broader game object
-                            self.G =pkl.load(f)
+                            self.graph =pkl.load(f)
                         sg.Popup('Game Loaded!')
                         window.close()
                     except:
                         sg.Popup('Oops! Please select a \'*.pickle\' file')
 
         window.close()
-        return self.G
+        return self.graph
 
+    def setMainWindow(self):
+        '''
+        set up the main window -- requires the graph object is set
+        if the current location object isn't set will set that as well
+        '''
+        local_col = [
+        [sg.Image( key = '-MAP IMAGE-', background_color = '#F9EFE8', size v = (1000, 600))],
+        #[sg.HorizontalSeparator()],
+        [sg.Text('This will be game object descriptors')],
+        [sg.Listbox(values = [], enable_events = True, key = '-OBJECT LIST-', size = (900, 400))]  
+        ]
+
+        #arrange the available actions into a column
+        action_col = [
+            [sg.Text('These will be the Game Actions')],
+            [sg.Listbox(values =[], enable_events = True, key = '-ACTION LIST-', size = (900, 1000))]
+            ]
+        #group the game area together (local map + description) + available actions
+        game_area = [sg.Column(local_col, size = (1000,1030)), sg.VerticalSeparator(), sg.Column(action_col, size = (920, 1030))]
+    
+        #set a layout for the window which includes a top ribbon (may remove later when i figure out how to edit the ribbon)
+        layout = [[sg.Frame('Top Ribbon', [[sg.Text('This will be the top ribbon')]], size = (1920, 50))],
+            [game_area]]
+        #set the window
+        self.mainWindow = sg.Window('Universal Assemblers', layout, size = (1920,1080))
+        return
+    
+    def setDisplay(self, location, node, path = 'location.png', key = '-MAP IMAGE-'):
+        '''
+        sets the display object to a location
+        sets a reference to that location
+        has a node reference if the location is a solar system
+        '''
+        #draw the image
+        location['image'].savefig(path)
+        #display the image
+        self.mainWindow['-MAP IMAGE-'].update(data = path)
+        self.mainWindow.TKroot.update()
+        #set display metadata
+        if node != None:
+            node_ref = node
+            is_node = True
+        else:
+            is_node = False
+            node_ref = False
+
+        self.display["meta"] = {
+            "location": location,
+            "is_node": is_node,
+            "node": node_ref
+            }
+            
+        return
+
+    
+    def setNavigationWindow(self):
+        '''
+        takes an array of buttons and a list of locations
+        the buttons should have the names of the locations
+        locations is a dict of id to object including the name 
+        
+        {location id: name: name, location: location_obj, is_node: True, False, node: node}}
+        '''
+
+        def navAction(name, location_dict):
+            sg.popup('Traveling to {name}...'.format(name = name))
+            self.setDisplay(location_dict["name"]["location"], location_dict["name"][node])
+            return
+
+
+        #determine if location is a sublocation or a node
+        if self.display["meta"]["is_node"] == True:
+            neighbors = [node for node in self.graph.neighbors(self.display["meta"]["node"])]
+            neighbor_dict = {}
+            for node in neighbors:
+                neighbor_dict[self.graph.nodes[node]["location"]["name"]] = {
+                    "location": self.graph[node]["location"],
+                    "is_node": True,
+                    "node": node
+                    }
+            buttons = [sg.Button("{name}".format(name = name) for name in neighbor_dict.keys())]
+        layout = [
+            [sg.Text("Choose a location to visit:")],
+            [buttons]
+        ]
+        window = sg.Window("Navigation Window", layout)
+        while True:
+            event, values = window.read()
+
+    #setting up the main window
     def setMainWindow(self, G, node):
         '''
         takes a game graph object and a current node and sets the main window
